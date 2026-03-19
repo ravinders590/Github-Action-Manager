@@ -15,6 +15,8 @@ let defaultBranch  = 'master';
 let latestBranch   = '';
 let perPageBranches = 0;    // 0 = fetch all pages; controlled by #branchPerPage select
 let perPagePRs      = 50;   // controlled by #prPerPage select
+let allPopupRepos   = [];
+let popupReposFetched = false;
 
 // ── Init ────────────────────────────────────────────────
 async function init() {
@@ -29,6 +31,7 @@ async function init() {
   }
 
   showRepoBar();
+  initRepoPicker();
   await loadBranches();
   await Promise.all([loadOpenPRs(), loadWorkflows()]);
 
@@ -94,6 +97,159 @@ function showRepoBar() {
   $('#configBar').classList.add('hidden');
   $('#repoBar').classList.remove('hidden');
   $('#repoName').textContent = `${config.owner}/${config.repo}`;
+}
+
+// ── Repo Picker (inline popup switcher) ─────────────────
+function initRepoPicker() {
+  const panel = $('#repoPickerPanel');
+  const btn   = $('#btnChangeRepo');
+  const searchInput = $('#popupRepoSearch');
+
+  btn.addEventListener('click', async () => {
+    const isOpen = !panel.classList.contains('hidden');
+    if (isOpen) {
+      panel.classList.add('hidden');
+      return;
+    }
+    panel.classList.remove('hidden');
+    searchInput.value = '';
+    filterPopupDropdown('');
+    searchInput.focus();
+    if (!popupReposFetched) await fetchPopupRepos();
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterPopupDropdown(searchInput.value.trim());
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    const ul    = $('#popupRepoDropdown');
+    const items = [...ul.querySelectorAll('.popup-repo-option:not(.popup-repo-no-results)')];
+    const active = ul.querySelector('.popup-repo-option.active');
+    let idx = items.indexOf(active);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      idx = Math.min(idx + 1, items.length - 1);
+      items.forEach((i) => i.classList.remove('active'));
+      if (items[idx]) { items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      idx = Math.max(idx - 1, 0);
+      items.forEach((i) => i.classList.remove('active'));
+      if (items[idx]) { items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (active) applyPopupRepoSelection(active.dataset.fullName);
+    } else if (e.key === 'Escape') {
+      panel.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#repoPickerPanel') && !e.target.closest('#btnChangeRepo')) {
+      panel.classList.add('hidden');
+    }
+  });
+}
+
+async function fetchPopupRepos() {
+  setPopupRepoStatus('Fetching repositories\u2026', 'loading');
+  try {
+    const repos = [];
+    let page = 1;
+    while (true) {
+      const res  = await ghFetch(`/user/repos?per_page=100&page=${page}&sort=updated&affiliation=owner,collaborator,organization_member`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `GitHub error ${res.status}`);
+      if (!data.length) break;
+      repos.push(...data);
+      if (data.length < 100) break;
+      page++;
+    }
+    allPopupRepos   = repos.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    popupReposFetched = true;
+    setPopupRepoStatus('', '');
+    filterPopupDropdown($('#popupRepoSearch').value.trim());
+  } catch (err) {
+    setPopupRepoStatus(`Failed: ${err.message}`, 'error');
+  }
+}
+
+function setPopupRepoStatus(msg, type) {
+  const el = $('#popupRepoStatus');
+  if (!msg) { el.classList.add('hidden'); return; }
+  el.textContent = msg;
+  el.className   = `popup-repo-status ${type}`;
+  el.classList.remove('hidden');
+}
+
+function filterPopupDropdown(query) {
+  const ul    = $('#popupRepoDropdown');
+  const lower = query.toLowerCase();
+  const filtered = query
+    ? allPopupRepos.filter((r) => r.full_name.toLowerCase().includes(lower))
+    : allPopupRepos;
+
+  ul.innerHTML = '';
+
+  if (!filtered.length) {
+    const li = document.createElement('li');
+    li.className   = 'popup-repo-option popup-repo-no-results';
+    li.textContent = allPopupRepos.length ? `No repos matching \"${query}\"` : 'Loading\u2026';
+    ul.appendChild(li);
+    return;
+  }
+
+  filtered.slice(0, 60).forEach((repo) => {
+    const li = document.createElement('li');
+    li.className = 'popup-repo-option';
+    li.setAttribute('role', 'option');
+    li.dataset.fullName = repo.full_name;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'popup-repo-option-name';
+    if (query) {
+      const idx = repo.full_name.toLowerCase().indexOf(lower);
+      nameSpan.innerHTML =
+        escapeHtml(repo.full_name.slice(0, idx)) +
+        `<mark>${escapeHtml(repo.full_name.slice(idx, idx + query.length))}</mark>` +
+        escapeHtml(repo.full_name.slice(idx + query.length));
+    } else {
+      nameSpan.textContent = repo.full_name;
+    }
+
+    const metaSpan = document.createElement('span');
+    metaSpan.className   = 'popup-repo-option-meta';
+    metaSpan.textContent = [repo.private ? 'private' : 'public', repo.language].filter(Boolean).join(' \u00b7 ');
+
+    li.appendChild(nameSpan);
+    li.appendChild(metaSpan);
+
+    li.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      applyPopupRepoSelection(repo.full_name);
+    });
+
+    ul.appendChild(li);
+  });
+}
+
+async function applyPopupRepoSelection(fullName) {
+  const [owner, repo] = fullName.split('/');
+  config.owner = owner;
+  config.repo  = repo;
+  chrome.storage.sync.set({ ghOwner: owner, ghRepo: repo });
+  $('#repoPickerPanel').classList.add('hidden');
+  showRepoBar();
+  showLoader(`Switching to ${fullName}\u2026`);
+  branchNames   = [];
+  defaultBranch = 'master';
+  latestBranch  = '';
+  await loadBranches();
+  await Promise.all([loadOpenPRs(), loadWorkflows()]);
+  hideLoader();
+  toast(`Switched to ${fullName}`, 'success');
 }
 
 // ── Tabs navigation ─────────────────────────────────────
