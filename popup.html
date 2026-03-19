@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Action Manager</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <svg class="logo" viewBox="0 0 24 24" width="22" height="22">
+        <path fill="currentColor"
+          d="M12 .5C5.37.5 0 5.78 0 12.292c0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.333-1.723-1.333-1.723-1.09-.731.083-.716.083-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209A11.616 11.616 0 0 1 12 6.32c1.02.005 2.047.136 3.006.398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56C20.565 21.917 24 17.495 24 12.292 24 5.78 18.627.5 12 .5z" />
+      </svg>
+      <h1 class="header-title">Action Manager</h1>
+    </div>
+    <button id="btnSettings" class="icon-btn" title="Settings">
+      <svg viewBox="0 0 24 24" width="18" height="18">
+        <path fill="currentColor"
+          d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.04 7.04 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z" />
+      </svg>
+    </button>
+  </header>
+
+  <!-- ===== CONFIG BAR (repo/owner display) ===== -->
+  <section id="configBar" class="config-bar hidden">
+    <span class="config-label">No repo configured —</span>
+    <a href="#" id="openSettings" class="config-link">Open Settings</a>
+  </section>
+  <section id="repoBar" class="repo-bar hidden">
+    <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8zM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2z"/></svg>
+    <span id="repoName" class="repo-name"></span>
+  </section>
+
+  <!-- ===== TABS ===== -->
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="pr" role="tab" aria-selected="true">
+      <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25m5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354M3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5m0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5m8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0"/></svg>
+      Pull Requests
+    </button>
+    <button class="tab" data-tab="build" role="tab" aria-selected="false">
+      <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11.28 3.22a.749.749 0 0 1 0 1.06L7.56 8l3.72 3.72a.749.749 0 1 1-1.06 1.06L5.94 8.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0M8.28 3.22a.749.749 0 0 1 0 1.06L4.56 8l3.72 3.72a.749.749 0 1 1-1.06 1.06L2.94 8.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0"/></svg>
+      Build Triggers
+    </button>
+  </nav>
+
+  <!-- ============ TAB: PULL REQUESTS ============ -->
+  <section id="tabPR" class="tab-content active">
+
+    <!-- PR toolbar -->
+    <div class="build-toolbar">
+      <span id="prCount" class="workflow-count"></span>
+      <div class="toolbar-right">
+        <label class="perpage-label" for="prPerPage">Show</label>
+        <select id="prPerPage" class="input input-sm">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="all">All</option>
+        </select>
+        <button id="btnRefreshPRs" class="icon-btn" title="Refresh PRs">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 1 1-1.489.18A5.501 5.501 0 0 0 8 2.5M1.705 8.005a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-tabs: Create PR / Merge PR -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="createPR">Create PR</button>
+      <button class="sub-tab" data-subtab="mergePR">Merge PR</button>
+    </div>
+    </div>
+
+    <!-- ---- Create PR Panel ---- -->
+    <div id="panelCreatePR" class="panel active">
+      <div class="field">
+        <label for="prBase">Base Branch</label>
+        <select id="prBase" class="input"><option value="">Loading branches…</option></select>
+      </div>
+      <div class="field">
+        <label for="prHead">Compare Branch</label>
+        <select id="prHead" class="input"><option value="">Loading branches…</option></select>
+      </div>
+      <div class="field">
+        <label for="prTitle">PR Title</label>
+        <input id="prTitle" class="input" type="text" placeholder="e.g. feat: add login page" />
+      </div>
+      <div class="field">
+        <label for="prBody">Description <span class="optional">(optional)</span></label>
+        <textarea id="prBody" class="input textarea" rows="3" placeholder="Describe the changes…"></textarea>
+      </div>
+      <button id="btnCreatePR" class="btn btn-primary full-width">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25m5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354"/></svg>
+        Create Pull Request
+      </button>
+    </div>
+
+    <!-- ---- Merge PR Panel ---- -->
+    <div id="panelMergePR" class="panel">
+      <div class="field">
+        <label for="prList">Open Pull Requests</label>
+        <select id="prList" class="input"><option value="">Loading PRs…</option></select>
+        <button id="btnRefreshPRsInner" class="icon-btn refresh-btn" title="Refresh PRs" style="display:none"></button>
+
+      <!-- PR detail card -->
+      <div id="prDetail" class="pr-detail hidden">
+        <div class="pr-detail-header">
+          <span class="pr-number"></span>
+          <span class="pr-detail-title"></span>
+        </div>
+        <div class="pr-meta">
+          <span class="pr-author"></span>
+          <span class="pr-status"></span>
+        </div>
+        <div class="pr-branches">
+          <span class="pr-head-branch chip"></span>
+          <svg viewBox="0 0 16 16" width="12" height="12"><path fill="currentColor" d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06"/></svg>
+          <span class="pr-base-branch chip"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mergeMethod">Merge Method</label>
+        <select id="mergeMethod" class="input">
+          <option value="merge">Merge Commit</option>
+          <option value="squash">Squash and Merge</option>
+          <option value="rebase">Rebase and Merge</option>
+        </select>
+      </div>
+      <button id="btnMergePR" class="btn btn-success full-width" disabled>
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0"/></svg>
+        Merge Pull Request
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ TAB: BUILD TRIGGERS ============ -->
+  <section id="tabBuild" class="tab-content">
+    <div class="build-toolbar">
+      <span id="workflowCount" class="workflow-count"></span>
+      <div class="toolbar-right">
+        <label class="perpage-label" for="branchPerPage">Branches</label>
+        <select id="branchPerPage" class="input input-sm">
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="all" selected>All</option>
+        </select>
+        <button id="btnRefreshWorkflows" class="icon-btn" title="Refresh workflows">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 1 1-1.489.18A5.501 5.501 0 0 0 8 2.5M1.705 8.005a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="workflowList" class="workflow-list">
+      <p class="workflow-empty">Loading workflows…</p>
+    </div>
+  </section>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div id="loader" class="loader-overlay hidden">
+    <div class="spinner"></div>
+    <p class="loader-text">Processing…</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

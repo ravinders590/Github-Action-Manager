@@ -1,0 +1,292 @@
+/* ===== Options / Settings page styles ===== */
+:root {
+  --bg-primary:    #0d1117;
+  --bg-secondary:  #161b22;
+  --bg-tertiary:   #21262d;
+  --bg-card:       #1c2128;
+  --border:        #30363d;
+  --border-hover:  #484f58;
+  --text-primary:  #e6edf3;
+  --text-secondary:#8b949e;
+  --text-muted:    #6e7681;
+  --accent-blue:   #58a6ff;
+  --accent-green:  #3fb950;
+  --accent-red:    #f85149;
+  --radius-sm:     6px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --transition:    .2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.hidden { display: none !important; }
+.container { width: 100%; max-width: 520px; }
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.logo { color: var(--text-primary); flex-shrink: 0; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Cards / Fieldsets */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  padding: 0 6px;
+}
+
+/* Fields */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(88,166,255,.15);
+}
+.input-group {
+  display: flex;
+  gap: 4px;
+}
+.input-group .input { flex: 1; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hint code {
+  background: var(--bg-tertiary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.hint a { color: var(--accent-blue); text-decoration: none; }
+.hint a:hover { text-decoration: underline; }
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* Actions */
+.actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+.btn-primary { background: var(--accent-blue); color: #fff; }
+.btn-primary:hover { background: #79c0ff; }
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--border-hover); color: var(--text-primary); }
+
+/* Status box */
+.status {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+.status.success { background: rgba(63,185,80,.12); border: 1px solid rgba(63,185,80,.3); color: var(--accent-green); }
+.status.error   { background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.3); color: var(--accent-red); }
+.status.info    { background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.3); color: var(--accent-blue); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== User pill (shown next to label) ===== */
+.user-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(88,166,255,.12);
+  color: var(--accent-blue);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid rgba(88,166,255,.25);
+  vertical-align: middle;
+}
+
+/* ===== Repo picker wrap ===== */
+.repo-picker-wrap {
+  display: flex;
+  gap: 4px;
+  position: relative;
+}
+.repo-picker-wrap .input { flex: 1; }
+.repo-fetch-btn { flex-shrink: 0; }
+
+/* ===== Repo dropdown ===== */
+.repo-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  padding: 4px 0;
+}
+.repo-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background var(--transition);
+  font-size: 13px;
+}
+.repo-option:hover,
+.repo-option.active {
+  background: var(--bg-tertiary);
+}
+.repo-option-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repo-option-name mark {
+  background: rgba(88,166,255,.25);
+  color: var(--accent-blue);
+  border-radius: 2px;
+}
+.repo-option-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.repo-no-results {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: default;
+  padding: 12px;
+}
+
+/* ===== Selected repo chip ===== */
+.repo-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  background: rgba(63,185,80,.08);
+  border: 1px solid rgba(63,185,80,.25);
+  border-radius: var(--radius-sm);
+  color: var(--accent-green);
+  font-size: 13px;
+  font-weight: 500;
+}
+.chip-clear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 3px;
+  transition: color var(--transition);
+}
+.chip-clear:hover { color: var(--accent-red); }
+
+/* ===== Fetch status strip ===== */
+.repo-fetch-status {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.repo-fetch-loading {
+  background: rgba(88,166,255,.08);
+  color: var(--accent-blue);
+  border: 1px solid rgba(88,166,255,.2);
+}
+.repo-fetch-error {
+  background: rgba(248,81,73,.08);
+  color: var(--accent-red);
+  border: 1px solid rgba(248,81,73,.2);
+}
+
+/* Ensure picker wrap is relatively positioned so dropdown anchors correctly */
+#repoPickerField { position: relative; }
