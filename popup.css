@@ -605,6 +605,29 @@ select.input option { background: var(--bg-secondary); color: var(--text-primary
   to   { opacity: 1; }
 }
 
+/* ===== Git Commands ===== */
+.git-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(248, 81, 73, .08);
+  border: 1px solid rgba(248, 81, 73, .25);
+  font-size: 12px;
+  color: var(--accent-red);
+}
+
+.btn-danger {
+  background: var(--accent-red);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: #ff6b63;
+  box-shadow: 0 2px 10px rgba(248, 81, 73, .35);
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -35,6 +35,11 @@ async function init() {
   await loadBranches();
   await Promise.all([loadOpenPRs(), loadWorkflows()]);
 
+  // Git Commands tab
+  $('#btnGitCreateBranch').addEventListener('click', handleGitCreateBranch);
+  $('#btnGitDeleteBranch').addEventListener('click', handleGitDeleteBranch);
+  $('#btnGitRenameBranch').addEventListener('click', handleGitRenameBranch);
+
   // Branch per-page selector
   $('#branchPerPage').addEventListener('change', async () => {
     const val = $('#branchPerPage').value;
@@ -269,9 +274,10 @@ function wireUpTabs() {
 function wireUpSubTabs() {
   $$('.sub-tab').forEach((st) => {
     st.addEventListener('click', () => {
-      $$('.sub-tab').forEach((s) => s.classList.remove('active'));
+      const group = st.closest('.tab-content');
+      group.querySelectorAll('.sub-tab').forEach((s) => s.classList.remove('active'));
       st.classList.add('active');
-      $$('.panel').forEach((p) => p.classList.remove('active'));
+      group.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
       $(`#panel${capitalize(st.dataset.subtab)}`).classList.add('active');
     });
   });
@@ -285,8 +291,12 @@ function wireUpSettingsButton() {
 function capitalize(str) {
   if (str === 'pr') return 'PR';
   if (str === 'build') return 'Build';
+  if (str === 'git') return 'Git';
   if (str === 'createPR') return 'CreatePR';
   if (str === 'mergePR') return 'MergePR';
+  if (str === 'gitCreateBranch') return 'GitCreateBranch';
+  if (str === 'gitDeleteBranch') return 'GitDeleteBranch';
+  if (str === 'gitRenameBranch') return 'GitRenameBranch';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -375,6 +385,11 @@ async function loadBranches() {
 
     populateSelect('#prBase', branchNames, 'Select base branch', defaultBranch);
     populateSelect('#prHead', branchNames, 'Select compare branch', latestBranch);
+
+    // Populate Git Commands tab branch selects
+    populateSelect('#gitBranchBase', branchNames, 'Select source branch', defaultBranch);
+    populateSelect('#gitDeleteBranch', branchNames, 'Select branch to delete', '');
+    populateSelect('#gitRenameSource', branchNames, 'Select branch to rename', '');
   } catch (err) {
     toast(`Failed to load branches: ${err.message}`, 'error');
   }
@@ -493,6 +508,90 @@ async function handleMergePR() {
   } catch (err) {
     hideLoader();
     toast(`Merge failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Git Commands ────────────────────────────────────────
+async function handleGitCreateBranch() {
+  const base = $('#gitBranchBase').value;
+  const name = $('#gitNewBranchName').value.trim();
+
+  if (!base) return toast('Select a source branch.', 'error');
+  if (!name) return toast('Enter a name for the new branch.', 'error');
+  if (!/^[\w.\-/]+$/.test(name)) return toast('Branch name contains invalid characters.', 'error');
+
+  showLoader(`Creating branch "${name}"…`);
+  try {
+    // Resolve source branch SHA
+    const refData = await ghJSON(`/repos/${config.owner}/${config.repo}/git/ref/heads/${encodeURIComponent(base)}`);
+    const sha = refData.object.sha;
+
+    await ghJSON(`/repos/${config.owner}/${config.repo}/git/refs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: `refs/heads/${name}`, sha }),
+    });
+    hideLoader();
+    toast(`Branch "${name}" created from "${base}"!`, 'success');
+    $('#gitNewBranchName').value = '';
+    await loadBranches();
+  } catch (err) {
+    hideLoader();
+    toast(`Create branch failed: ${err.message}`, 'error');
+  }
+}
+
+async function handleGitDeleteBranch() {
+  const branch = $('#gitDeleteBranch').value;
+  if (!branch) return toast('Select a branch to delete.', 'error');
+
+  if (!confirm(`Delete branch "${branch}" from ${config.owner}/${config.repo}?\n\nThis cannot be undone.`)) return;
+
+  showLoader(`Deleting branch "${branch}"…`);
+  try {
+    const res = await ghFetch(
+      `/repos/${config.owner}/${config.repo}/git/refs/heads/${encodeURIComponent(branch)}`,
+      { method: 'DELETE' }
+    );
+    if (res.status !== 204) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub error ${res.status}`);
+    }
+    hideLoader();
+    toast(`Branch "${branch}" deleted.`, 'success');
+    await loadBranches();
+  } catch (err) {
+    hideLoader();
+    toast(`Delete branch failed: ${err.message}`, 'error');
+  }
+}
+
+async function handleGitRenameBranch() {
+  const source = $('#gitRenameSource').value;
+  const target = $('#gitRenameTarget').value.trim();
+
+  if (!source) return toast('Select a branch to rename.', 'error');
+  if (!target) return toast('Enter the new branch name.', 'error');
+  if (!/^[\w.\-/]+$/.test(target)) return toast('Branch name contains invalid characters.', 'error');
+  if (source === target) return toast('New name must differ from the current name.', 'error');
+
+  showLoader(`Renaming "${source}" → "${target}"…`);
+  try {
+    await ghJSON(
+      `/repos/${config.owner}/${config.repo}/branches/${encodeURIComponent(source)}/rename`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_name: target }),
+      }
+    );
+    hideLoader();
+    toast(`Branch renamed to "${target}"!`, 'success');
+    $('#gitRenameTarget').value = '';
+    await loadBranches();
+  } catch (err) {
+    hideLoader();
+    toast(`Rename branch failed: ${err.message}`, 'error');
   }
 }
 

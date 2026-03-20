@@ -55,6 +55,10 @@
       <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11.28 3.22a.749.749 0 0 1 0 1.06L7.56 8l3.72 3.72a.749.749 0 1 1-1.06 1.06L5.94 8.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0M8.28 3.22a.749.749 0 0 1 0 1.06L4.56 8l3.72 3.72a.749.749 0 1 1-1.06 1.06L2.94 8.53a.749.749 0 0 1 0-1.06l4.25-4.25a.749.749 0 0 1 1.06 0"/></svg>
       Build Triggers
     </button>
+    <button class="tab" data-tab="git" role="tab" aria-selected="false">
+      <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M15.698 7.287 8.712.302a1.03 1.03 0 0 0-1.457 0l-1.45 1.45 1.84 1.84a1.223 1.223 0 0 1 1.55 1.56l1.773 1.774a1.224 1.224 0 0 1 1.267 2.025 1.226 1.226 0 0 1-2.002-1.334L8.58 5.963v4.353a1.226 1.226 0 1 1-1.008-.036V5.887a1.226 1.226 0 0 1-.666-1.608L5.093 2.44.302 7.233a1.03 1.03 0 0 0 0 1.457l6.986 6.985a1.03 1.03 0 0 0 1.457 0l6.953-6.953a1.031 1.031 0 0 0 0-1.435"/></svg>
+      Git Commands
+    </button>
   </nav>
 
   <!-- ============ TAB: PULL REQUESTS ============ -->
@@ -169,6 +173,66 @@
     <div id="workflowList" class="workflow-list">
       <p class="workflow-empty">Loading workflows…</p>
     </div>
+  </section>
+
+  <!-- ============ TAB: GIT COMMANDS ============ -->
+  <section id="tabGit" class="tab-content">
+
+    <!-- Git sub-tabs -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="gitCreateBranch">Create Branch</button>
+      <button class="sub-tab" data-subtab="gitDeleteBranch">Delete Branch</button>
+      <button class="sub-tab" data-subtab="gitRenameBranch">Rename Branch</button>
+    </div>
+
+    <!-- ---- Create Branch Panel ---- -->
+    <div id="panelGitCreateBranch" class="panel active">
+      <div class="field">
+        <label for="gitBranchBase">Source Branch</label>
+        <select id="gitBranchBase" class="input"><option value="">Loading branches…</option></select>
+      </div>
+      <div class="field">
+        <label for="gitNewBranchName">New Branch Name</label>
+        <input id="gitNewBranchName" class="input" type="text" placeholder="e.g. feature/my-feature" spellcheck="false" />
+      </div>
+      <button id="btnGitCreateBranch" class="btn btn-primary full-width">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zm-2.25.75a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25zM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zM3.5 3.25a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0z"/></svg>
+        Create Branch
+      </button>
+    </div>
+
+    <!-- ---- Delete Branch Panel ---- -->
+    <div id="panelGitDeleteBranch" class="panel">
+      <div class="git-warning-banner">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0M9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+        This action permanently deletes the branch from GitHub.
+      </div>
+      <div class="field">
+        <label for="gitDeleteBranch">Branch to Delete</label>
+        <select id="gitDeleteBranch" class="input"><option value="">Loading branches…</option></select>
+      </div>
+      <button id="btnGitDeleteBranch" class="btn btn-danger full-width">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/></svg>
+        Delete Branch
+      </button>
+    </div>
+
+    <!-- ---- Rename Branch Panel ---- -->
+    <div id="panelGitRenameBranch" class="panel">
+      <div class="field">
+        <label for="gitRenameSource">Branch to Rename</label>
+        <select id="gitRenameSource" class="input"><option value="">Loading branches…</option></select>
+      </div>
+      <div class="field">
+        <label for="gitRenameTarget">New Name</label>
+        <input id="gitRenameTarget" class="input" type="text" placeholder="e.g. feature/new-name" spellcheck="false" />
+      </div>
+      <button id="btnGitRenameBranch" class="btn btn-primary full-width">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086ZM11.189 6.25 9.75 4.81 4.09 10.472a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.249.249 0 0 0 .108-.064Z"/></svg>
+        Rename Branch
+      </button>
+    </div>
+
   </section>
 
   <!-- ===== TOAST ===== -->
