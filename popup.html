@@ -57,7 +57,11 @@
     </button>
     <button class="tab" data-tab="git" role="tab" aria-selected="false">
       <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M15.698 7.287 8.712.302a1.03 1.03 0 0 0-1.457 0l-1.45 1.45 1.84 1.84a1.223 1.223 0 0 1 1.55 1.56l1.773 1.774a1.224 1.224 0 0 1 1.267 2.025 1.226 1.226 0 0 1-2.002-1.334L8.58 5.963v4.353a1.226 1.226 0 1 1-1.008-.036V5.887a1.226 1.226 0 0 1-.666-1.608L5.093 2.44.302 7.233a1.03 1.03 0 0 0 0 1.457l6.986 6.985a1.03 1.03 0 0 0 1.457 0l6.953-6.953a1.031 1.031 0 0 0 0-1.435"/></svg>
-      Git Commands
+      Git
+    </button>
+    <button class="tab" data-tab="issues" role="tab" aria-selected="false">
+      <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/><path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0"/></svg>
+      Issues
     </button>
   </nav>
 
@@ -145,10 +149,16 @@
           <option value="rebase">Rebase and Merge</option>
         </select>
       </div>
-      <button id="btnMergePR" class="btn btn-success full-width" disabled>
-        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0"/></svg>
-        Merge Pull Request
-      </button>
+      <div class="pr-actions">
+        <button id="btnMergePR" class="btn btn-success" disabled>
+          <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0"/></svg>
+          Merge PR
+        </button>
+        <button id="btnClosePR" class="btn btn-neutral" disabled>
+          <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L9.06 8l3.22 3.22a.749.749 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.749.749 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06"/></svg>
+          Close
+        </button>
+      </div>
     </div>
   </section>
 
@@ -230,6 +240,53 @@
       <button id="btnGitRenameBranch" class="btn btn-primary full-width">
         <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086ZM11.189 6.25 9.75 4.81 4.09 10.472a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.249.249 0 0 0 .108-.064Z"/></svg>
         Rename Branch
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ============ TAB: ISSUES ============ -->
+  <section id="tabIssues" class="tab-content">
+
+    <div class="build-toolbar">
+      <span id="issueCount" class="workflow-count"></span>
+      <div class="toolbar-right">
+        <button id="btnRefreshIssues" class="icon-btn" title="Refresh issues">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 1 1-1.489.18A5.501 5.501 0 0 0 8 2.5M1.705 8.005a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-tabs: Open Issues / Create Issue -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="listIssues">Open Issues</button>
+      <button class="sub-tab" data-subtab="createIssue">Create Issue</button>
+    </div>
+
+    <!-- ---- Open Issues Panel ---- -->
+    <div id="panelListIssues" class="panel active">
+      <div id="issueList" class="issue-list">
+        <p class="workflow-empty">Loading issues…</p>
+      </div>
+    </div>
+
+    <!-- ---- Create Issue Panel ---- -->
+    <div id="panelCreateIssue" class="panel">
+      <div class="field">
+        <label for="issueTitle">Title</label>
+        <input id="issueTitle" class="input" type="text" placeholder="Short summary of the issue" />
+      </div>
+      <div class="field">
+        <label for="issueBody">Description <span class="optional">(optional)</span></label>
+        <textarea id="issueBody" class="input textarea" rows="3" placeholder="Describe what happened and expected behavior…"></textarea>
+      </div>
+      <div class="field">
+        <label for="issueLabels">Labels <span class="optional">(comma-separated, optional)</span></label>
+        <input id="issueLabels" class="input" type="text" placeholder="e.g. bug, enhancement" />
+      </div>
+      <button id="btnCreateIssue" class="btn btn-primary full-width">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2"/></svg>
+        Create Issue
       </button>
     </div>
 

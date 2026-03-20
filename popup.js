@@ -33,12 +33,20 @@ async function init() {
   showRepoBar();
   initRepoPicker();
   await loadBranches();
-  await Promise.all([loadOpenPRs(), loadWorkflows()]);
+  await Promise.all([loadOpenPRs(), loadWorkflows(), loadIssues()]);
 
   // Git Commands tab
   $('#btnGitCreateBranch').addEventListener('click', handleGitCreateBranch);
   $('#btnGitDeleteBranch').addEventListener('click', handleGitDeleteBranch);
   $('#btnGitRenameBranch').addEventListener('click', handleGitRenameBranch);
+
+  // Issues tab
+  $('#btnRefreshIssues').addEventListener('click', async () => {
+    showLoader('Refreshing issues…');
+    await loadIssues();
+    hideLoader();
+  });
+  $('#btnCreateIssue').addEventListener('click', handleCreateIssue);
 
   // Branch per-page selector
   $('#branchPerPage').addEventListener('change', async () => {
@@ -292,11 +300,14 @@ function capitalize(str) {
   if (str === 'pr') return 'PR';
   if (str === 'build') return 'Build';
   if (str === 'git') return 'Git';
+  if (str === 'issues') return 'Issues';
   if (str === 'createPR') return 'CreatePR';
   if (str === 'mergePR') return 'MergePR';
   if (str === 'gitCreateBranch') return 'GitCreateBranch';
   if (str === 'gitDeleteBranch') return 'GitDeleteBranch';
   if (str === 'gitRenameBranch') return 'GitRenameBranch';
+  if (str === 'listIssues') return 'ListIssues';
+  if (str === 'createIssue') return 'CreateIssue';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -434,6 +445,11 @@ async function loadOpenPRs() {
     const mergeBtn = $('#btnMergePR');
     mergeBtn.replaceWith(mergeBtn.cloneNode(true));
     $('#btnMergePR').addEventListener('click', handleMergePR);
+
+    // Wire close PR button (guard against duplicate listeners)
+    const closeBtn = $('#btnClosePR');
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    $('#btnClosePR').addEventListener('click', handleClosePR);
   } catch (err) {
     toast(`Failed to load PRs: ${err.message}`, 'error');
   }
@@ -442,7 +458,12 @@ async function loadOpenPRs() {
 function showPRDetail(sel) {
   const num = parseInt(sel.value, 10);
   const card = $('#prDetail');
-  if (!num) { card.classList.add('hidden'); $('#btnMergePR').disabled = true; return; }
+  if (!num) {
+    card.classList.add('hidden');
+    $('#btnMergePR').disabled = true;
+    $('#btnClosePR').disabled = true;
+    return;
+  }
 
   const pr = sel._prData.find((p) => p.number === num);
   if (!pr) return;
@@ -455,6 +476,7 @@ function showPRDetail(sel) {
   card.querySelector('.pr-base-branch').textContent = pr.base.ref;
   card.classList.remove('hidden');
   $('#btnMergePR').disabled = false;
+  $('#btnClosePR').disabled = false;
 }
 
 // ── Create PR ───────────────────────────────────────────
@@ -485,6 +507,29 @@ async function handleCreatePR() {
   } catch (err) {
     hideLoader();
     toast(`Create PR failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Close PR ────────────────────────────────────────────
+async function handleClosePR() {
+  const prNumber = $('#prList').value;
+  if (!prNumber) return toast('Select a PR to close.', 'error');
+
+  if (!confirm(`Close PR #${prNumber}?\n\nThis will close the PR without merging.`)) return;
+
+  showLoader(`Closing PR #${prNumber}…`);
+  try {
+    await ghJSON(`/repos/${config.owner}/${config.repo}/pulls/${prNumber}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: 'closed' }),
+    });
+    hideLoader();
+    toast(`PR #${prNumber} closed.`, 'success');
+    await loadOpenPRs();
+  } catch (err) {
+    hideLoader();
+    toast(`Close PR failed: ${err.message}`, 'error');
   }
 }
 
@@ -641,15 +686,24 @@ function buildWorkflowCard(wf) {
         <span class="wf-name">${escapeHtml(wf.name)}</span>
         <span class="wf-file">${escapeHtml(fileName)}</span>
       </div>
-      <span class="wf-badge ${isActive ? 'wf-badge-active' : 'wf-badge-inactive'}">
-        ${isActive ? 'active' : 'disabled'}
-      </span>
+      <div class="wf-header-actions">
+        <button class="wf-toggle-btn ${isActive ? 'wf-toggle-disable' : 'wf-toggle-enable'}" title="${isActive ? 'Disable workflow' : 'Enable workflow'}">
+          ${isActive ? 'Disable' : 'Enable'}
+        </button>
+        <span class="wf-badge ${isActive ? 'wf-badge-active' : 'wf-badge-inactive'}">
+          ${isActive ? 'active' : 'disabled'}
+        </span>
+      </div>
     </div>
     <div class="wf-last-run hidden">
       <span class="wf-run-label">Last run:</span>
       <span class="wf-run-status"></span>
       <span class="wf-run-time"></span>
+      <button class="wf-runs-toggle icon-btn" title="View recent runs">
+        <svg viewBox="0 0 16 16" width="11" height="11"><path fill="currentColor" d="M4.427 7.427l3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427z"/></svg>
+      </button>
     </div>
+    <div class="wf-runs-list hidden"></div>
     <div class="wf-footer">
       <select class="input wf-branch-sel">
         <option value="">Select branch…</option>
@@ -666,6 +720,21 @@ function buildWorkflowCard(wf) {
     const branch = card.querySelector('.wf-branch-sel').value;
     if (!branch) return toast('Please select a branch.', 'error');
     triggerWorkflowById(wf.id, wf.name, branch, card);
+  });
+
+  card.querySelector('.wf-toggle-btn').addEventListener('click', () => {
+    toggleWorkflowState(wf.id, wf.state, card);
+  });
+
+  card.querySelector('.wf-runs-toggle').addEventListener('click', () => {
+    const list = card.querySelector('.wf-runs-list');
+    const isOpen = !list.classList.contains('hidden');
+    if (isOpen) {
+      list.classList.add('hidden');
+    } else {
+      list.classList.remove('hidden');
+      if (!list.dataset.loaded) loadWorkflowRuns(wf.id, card);
+    }
   });
 
   return card;
@@ -711,16 +780,238 @@ async function loadWorkflowLastRun(wfId, card) {
     lastRunEl.classList.remove('hidden');
 
     const conclusion = run.conclusion || run.status;
+    let statusClass = 'pending';
+    if (run.conclusion === 'success') statusClass = 'success';
+    else if (run.conclusion === 'failure') statusClass = 'failure';
     const statusEl = lastRunEl.querySelector('.wf-run-status');
     statusEl.textContent = conclusion;
-    statusEl.className =
-      'wf-run-status ' +
-      (run.conclusion === 'success' ? 'success' : run.conclusion === 'failure' ? 'failure' : 'pending');
+    statusEl.className = `wf-run-status ${statusClass}`;
 
     lastRunEl.querySelector('.wf-run-time').textContent = timeAgo(new Date(run.created_at));
   } catch {
     // silently ignore
   }
+}
+
+// ── Workflow Enable / Disable ────────────────────────────
+async function toggleWorkflowState(wfId, currentState, card) {
+  const isActive = currentState === 'active';
+  const action = isActive ? 'disable' : 'enable';
+  showLoader(`${isActive ? 'Disabling' : 'Enabling'} workflow…`);
+  try {
+    const res = await ghFetch(
+      `/repos/${config.owner}/${config.repo}/actions/workflows/${wfId}/${action}`,
+      { method: 'PUT' }
+    );
+    if (res.status !== 204) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub error ${res.status}`);
+    }
+    hideLoader();
+    // Refresh the whole workflow list to reflect updated state
+    await loadWorkflows();
+    toast(`Workflow ${action}d.`, 'success');
+  } catch (err) {
+    hideLoader();
+    toast(`Failed to ${action} workflow: ${err.message}`, 'error');
+  }
+}
+
+// ── Workflow Run History ─────────────────────────────────
+async function loadWorkflowRuns(wfId, card) {
+  const list = card.querySelector('.wf-runs-list');
+  list.innerHTML = '<p class="wf-runs-loading">Loading runs…</p>';
+  try {
+    const data = await ghJSON(
+      `/repos/${config.owner}/${config.repo}/actions/workflows/${wfId}/runs?per_page=5`
+    );
+    list.dataset.loaded = '1';
+    if (!data.workflow_runs.length) {
+      list.innerHTML = '<p class="wf-runs-loading">No runs found.</p>';
+      return;
+    }
+    list.innerHTML = data.workflow_runs.map((run) => {
+      const conclusion = run.conclusion || run.status;
+      let statusClass = 'pending';
+      if (run.conclusion === 'success') statusClass = 'success';
+      else if (run.conclusion === 'failure') statusClass = 'failure';
+      const canCancel = run.status === 'in_progress' || run.status === 'queued' || run.status === 'waiting';
+      const canRerun = run.conclusion === 'failure' || run.conclusion === 'cancelled';
+      return `
+        <div class="wf-run-item" data-run-id="${run.id}">
+          <span class="wf-run-item-branch chip">${escapeHtml(run.head_branch || '—')}</span>
+          <span class="wf-run-item-status ${statusClass}">${escapeHtml(conclusion)}</span>
+          <span class="wf-run-item-time">${timeAgo(new Date(run.created_at))}</span>
+          <div class="wf-run-item-actions">
+            ${canCancel ? `<button class="wf-run-action-btn wf-cancel-run" data-run-id="${run.id}" title="Cancel run">Cancel</button>` : ''}
+            ${canRerun ? `<button class="wf-run-action-btn wf-rerun" data-run-id="${run.id}" title="Re-run">Re-run</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.wf-cancel-run').forEach((btn) => {
+      btn.addEventListener('click', () => cancelWorkflowRun(btn.dataset.runId, card, wfId));
+    });
+    list.querySelectorAll('.wf-rerun').forEach((btn) => {
+      btn.addEventListener('click', () => rerunWorkflow(btn.dataset.runId, card, wfId));
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="wf-runs-loading" style="color:var(--accent-red)">Failed: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function cancelWorkflowRun(runId, card, wfId) {
+  showLoader('Cancelling run…');
+  try {
+    const res = await ghFetch(
+      `/repos/${config.owner}/${config.repo}/actions/runs/${runId}/cancel`,
+      { method: 'POST' }
+    );
+    if (res.status !== 202) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub error ${res.status}`);
+    }
+    hideLoader();
+    toast('Run cancelled.', 'success');
+    const list = card.querySelector('.wf-runs-list');
+    delete list.dataset.loaded;
+    loadWorkflowRuns(wfId, card);
+  } catch (err) {
+    hideLoader();
+    toast(`Cancel failed: ${err.message}`, 'error');
+  }
+}
+
+async function rerunWorkflow(runId, card, wfId) {
+  showLoader('Re-running workflow…');
+  try {
+    const res = await ghFetch(
+      `/repos/${config.owner}/${config.repo}/actions/runs/${runId}/rerun`,
+      { method: 'POST' }
+    );
+    if (res.status !== 201) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub error ${res.status}`);
+    }
+    hideLoader();
+    toast('Workflow re-run triggered.', 'success');
+    setTimeout(() => {
+      const list = card.querySelector('.wf-runs-list');
+      delete list.dataset.loaded;
+      loadWorkflowRuns(wfId, card);
+    }, 3000);
+  } catch (err) {
+    hideLoader();
+    toast(`Re-run failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Issues ──────────────────────────────────────────────
+async function loadIssues() {
+  const list = $('#issueList');
+  const countEl = $('#issueCount');
+  list.innerHTML = '<p class="workflow-empty">Loading issues…</p>';
+  try {
+    const issues = await ghJSON(
+      `/repos/${config.owner}/${config.repo}/issues?state=open&per_page=50&sort=updated&direction=desc`
+    );
+    // Filter out pull requests (GitHub returns PRs as issues too)
+    const realIssues = issues.filter((i) => !i.pull_request);
+    countEl.textContent = `${realIssues.length} open issue${realIssues.length !== 1 ? 's' : ''}`;
+    if (!realIssues.length) {
+      list.innerHTML = '<p class="workflow-empty">No open issues.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    realIssues.forEach((issue) => list.appendChild(buildIssueItem(issue)));
+  } catch (err) {
+    list.innerHTML = `<p class="workflow-empty workflow-error">Failed to load: ${escapeHtml(err.message)}</p>`;
+    toast(`Failed to load issues: ${err.message}`, 'error');
+  }
+}
+
+function buildIssueItem(issue) {
+  const el = document.createElement('div');
+  el.className = 'issue-item';
+  el.dataset.issueNum = issue.number;
+
+  const labels = issue.labels.slice(0, 3)
+    .map((l) => `<span class="issue-label" style="background:rgba(${hexToRgb('#' + l.color)},0.15);color:#${l.color};border-color:rgba(${hexToRgb('#' + l.color)},0.4)">${escapeHtml(l.name)}</span>`)
+    .join('');
+
+  el.innerHTML = `
+    <div class="issue-item-main">
+      <div class="issue-item-top">
+        <span class="issue-number">#${issue.number}</span>
+        <span class="issue-title">${escapeHtml(issue.title)}</span>
+      </div>
+      <div class="issue-item-meta">
+        <span class="issue-meta-author">by ${escapeHtml(issue.user.login)}</span>
+        <span class="issue-meta-time">${timeAgo(new Date(issue.created_at))}</span>
+        ${labels ? `<div class="issue-labels">${labels}</div>` : ''}
+      </div>
+    </div>
+    <button class="btn-close-issue icon-btn" data-num="${issue.number}" title="Close issue #${issue.number}">
+      <svg viewBox="0 0 16 16" width="13" height="13"><path fill="currentColor" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L9.06 8l3.22 3.22a.749.749 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.749.749 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06"/></svg>
+    </button>
+  `;
+
+  el.querySelector('.btn-close-issue').addEventListener('click', () => handleCloseIssue(issue.number));
+  return el;
+}
+
+async function handleCloseIssue(num) {
+  if (!confirm(`Close issue #${num}?`)) return;
+  showLoader(`Closing issue #${num}…`);
+  try {
+    await ghJSON(`/repos/${config.owner}/${config.repo}/issues/${num}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: 'closed' }),
+    });
+    hideLoader();
+    toast(`Issue #${num} closed.`, 'success');
+    await loadIssues();
+  } catch (err) {
+    hideLoader();
+    toast(`Close issue failed: ${err.message}`, 'error');
+  }
+}
+
+async function handleCreateIssue() {
+  const title = $('#issueTitle').value.trim();
+  const body = $('#issueBody').value.trim();
+  const labelsRaw = $('#issueLabels').value.trim();
+
+  if (!title) return toast('Issue title is required.', 'error');
+
+  const labels = labelsRaw ? labelsRaw.split(',').map((l) => l.trim()).filter(Boolean) : [];
+
+  showLoader('Creating issue…');
+  try {
+    const issue = await ghJSON(`/repos/${config.owner}/${config.repo}/issues`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body: body || '', labels }),
+    });
+    hideLoader();
+    toast(`Issue #${issue.number} created!`, 'success');
+    $('#issueTitle').value = '';
+    $('#issueBody').value = '';
+    $('#issueLabels').value = '';
+    await loadIssues();
+  } catch (err) {
+    hideLoader();
+    toast(`Create issue failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Helpers ─────────────────────────────────────────────
+function hexToRgb(hex) {
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
 }
 
 // ── Toast ───────────────────────────────────────────────
